@@ -1,0 +1,72 @@
+sudo apt update
+sudo apt install git
+sudo apt install nginx
+sudo apt install python3 python3-pip
+sudo pip3 install Flask
+sudo mkdir -p /var/www/app
+cd /var/www/app
+sudo git clone https://github.com/FacelessEmoji/web-server.git .
+
+Проверим: ls
+
+sudo nano /etc/systemd/system/web_server.service
+
+---------------------------------------------------
+[Unit]
+Description=Web Server Flask App
+After=network.target
+
+[Service]
+User=emoji
+WorkingDirectory=/var/www/app
+ExecStart=/usr/bin/python3 /var/www/app/server.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+---------------------------------------------------
+
+sudo systemctl daemon-reload
+sudo systemctl enable web_server
+sudo systemctl start web_server
+
+Проверим: sudo systemctl status web_server
+
+ip a
+---------------------------------------------------
+inet 10.0.2.15/24 metric 100 brd 10.0.2.255 scope global dynamic enp0s3
+---------------------------------------------------
+
+
+sudo nano /etc/nginx/sites-available/web_server
+---------------------------------------------------
+server {
+    listen 80;
+    server_name 10.0.2.15; <-----------
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+---------------------------------------------------
+
+sudo ln -s /etc/nginx/sites-available/web_server /etc/nginx/sites-enabled
+sudo rm /etc/nginx/sites-enabled/default
+
+Проверим: sudo nginx -t
+
+sudo systemctl restart nginx
+
+
+История команд:
+history
+history > commands_history.txt
+
+
+Проброс портов:
+22 22
+8080 80
